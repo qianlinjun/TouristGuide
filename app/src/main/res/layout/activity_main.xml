@@ -15,19 +15,19 @@
         android:layout_height="wrap_content" />
 
     <Button
-        android:id="@+id/bt1"
+        android:id="@+id/bt_touristInfor"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="infor"
         android:layout_marginBottom="0dp"
-        app:layout_constraintBottom_toTopOf="@+id/database" />
+        app:layout_constraintBottom_toTopOf="@+id/bt_traceManager" />
 
     <Button
-        android:id="@+id/database"
+        android:id="@+id/bt_traceManager"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="test"
-        app:layout_constraintTop_toTopOf="@+id/bt1"
+        app:layout_constraintTop_toTopOf="@+id/bt_touristInfor"
         android:layout_marginTop="79dp" />
 
 </android.support.constraint.ConstraintLayout>
