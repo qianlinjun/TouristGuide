@@ -1,10 +1,12 @@
-package com.example.qlj.touristguide;
+package com.example.qlj.touristguide.Activity;
 
 import android.graphics.Color;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.view.WindowManager;
 
+import com.example.qlj.touristguide.R;
 import com.r0adkll.slidr.Slidr;
 import com.r0adkll.slidr.model.SlidrConfig;
 import com.r0adkll.slidr.model.SlidrPosition;
@@ -23,7 +25,7 @@ public class TouristInfor extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         //取消状态栏
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        setContentView(R.layout.tourist_infor);
+        setContentView(R.layout.layout_specifyinfor);
 
         int primary = getResources().getColor(R.color.primaryDark);
         int secondary = getResources().getColor(R.color.secondaryDark);

@@ -1,4 +1,4 @@
-package com.example.qlj.touristguide;
+package com.example.qlj.touristguide.Database_SQLite;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
@@ -12,7 +12,7 @@ import android.util.Log;
 public class MyDataBasehelp extends SQLiteOpenHelper {
     public static final String CREATE_LOCATION="create table location("
             + "ID integer primary key autoincrement, "//定位点ID，整型，主键，自增加
-            + "Time real, "//时间 ，浮点型
+            + "Time integer, "//时间 ，long型
             + "Lat real, "//定位的纬度(精度为小数点后三位，下同)，浮点型
             + "Lon real, "//定位的经度(精度为小数点后三位，下同)，浮点型
             + "val1 integer,"

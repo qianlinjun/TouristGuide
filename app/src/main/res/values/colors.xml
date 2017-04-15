@@ -11,4 +11,13 @@
     <color name="textPrimary">#212121</color>
     <color name="textSecondary">#727272</color>
     <color name="divider">#B6B6B6</color>
+
+    <color name="一">#689F3800</color>
+    <color name="二">#303F9F00</color>
+    <color name="三">#FF408100</color>
+    <color name="四">#8BC34A00</color>
+    <color name="五">#689F3800</color>
+    <color name="六">#689F3800</color>
+    <color name="七">#DCEDC800</color>
+    <color name="八">#FF408100</color>
 </resources>

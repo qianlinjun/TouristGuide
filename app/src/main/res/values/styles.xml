@@ -8,7 +8,7 @@
         <item name="colorAccent">@color/colorAccent</item>
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowBackground">@android:color/transparent</item>
-        <item name="android:windowTitleSize">20dip</item>
+        <item name="android:windowTitleSize">100dip</item>
     </style>
 
 </resources>

@@ -32,7 +32,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".MainActivity">
+        <activity android:name=".Activity.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -40,10 +40,7 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".TouristInfor">
-        </activity>
-
-        <activity android:name=".TraceManager">
+        <activity android:name=".Activity.TouristInfor">
         </activity>
 
         <service android:name="com.amap.api.location.APSService"></service>
