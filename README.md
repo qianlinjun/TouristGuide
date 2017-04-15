@@ -1,0 +1,5 @@
+# TouristGuide
+武汉旅游系统
+1.系统主入口是MainActivity，页面切换采用pageview（可以滑动切换页面）包含三个fragment activity（类似activity）。实现一个mainactivity可以左右滑动切换地图fragment、景点信息fragment、轨迹管理fragment。
+2.地图和轨迹数据采用高德sdk，在Fragment_Map类中实现地图显示、获得定位、显示定位图标。
+3.目前还缺细节功能，但是景点信息可以开始在Fragment_SightseeingList.class（显示景点列表）和Fragment_TouristInfor.class中尝试添加
