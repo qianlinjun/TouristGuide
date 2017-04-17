@@ -31,4 +31,5 @@ dependencies {
     compile 'com.r0adkll:slidableactivity:2.0.3'
     compile files('libs/AMap_Location_V3.3.0_20170118.jar')
     compile 'com.github.PhilJay:MPAndroidChart:v3.0.2'
+    compile 'com.getbase:floatingactionbutton:1.10.1'
 }
