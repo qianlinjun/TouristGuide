@@ -23,7 +23,7 @@ public class Fragment_TouristInfor extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         //取消状态栏
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        setContentView(R.layout.tourist_infor);
+        setContentView(R.layout.layout_specifyinfor);
 
         int primary = getResources().getColor(R.color.primaryDark);
         int secondary = getResources().getColor(R.color.secondaryDark);
