@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:weightSum="1">
+
+    <com.github.mikephil.charting.charts.BarChart
+        android:id="@+id/chart_bar"
+        android:layout_width="match_parent"
+        android:layout_height="320dp" />
+
+    <EditText
+        android:id="@+id/edit_queryResult"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:text="DBScan Result" />
+
+    <Button
+        android:id="@+id/bt_mytrace"
+        android:layout_width="match_parent"
+        android:layout_height="50dp" />
+
+
+</LinearLayout>
