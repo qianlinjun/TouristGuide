@@ -12,8 +12,7 @@
     <EditText
         android:id="@+id/edit_queryResult"
         android:layout_width="match_parent"
-        android:layout_height="100dp"
-        android:text="DBScan Result" />
+        android:layout_height="100dp" />
 
     <Button
         android:id="@+id/bt_mytrace"

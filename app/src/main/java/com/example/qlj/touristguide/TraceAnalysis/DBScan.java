@@ -20,7 +20,7 @@ public class DBScan {
     public int process(ArrayList<LocPoint> points) {
         int size = points.size();
         int idx = 0;
-        int cluster = 1;
+        int clusterNum = 1;
         while (idx<size) {
             LocPoint p = points.get(idx++);
             //choose an unvisited LocPoint
@@ -31,7 +31,7 @@ public class DBScan {
                 if (adjacentPoints != null && adjacentPoints.size() < minPts) {
                     p.setNoised(true);
                 } else {
-                    p.setCluster(cluster);
+                    p.setCluster(clusterNum);
                     for (int i = 0; i < adjacentPoints.size(); i++) {
                         LocPoint adjacentPoint = adjacentPoints.get(i);
                         //only check unvisited LocPoint, cause only unvisited have the chance to add new adjacent points
@@ -45,18 +45,18 @@ public class DBScan {
                         }
                         //add LocPoint which doest not belong to any cluster
                         if (adjacentPoint.getCluster() == 0) {
-                            adjacentPoint.setCluster(cluster);
+                            adjacentPoint.setCluster(clusterNum);
                             //set LocPoint which marked noised before non-noised
                             if (adjacentPoint.getNoised()) {
                                 adjacentPoint.setNoised(false);
                             }
                         }
                     }//for
-                    cluster++;
+                    clusterNum++;
                 }
             }
         }//while
-        return cluster;//返回聚类类别数
+        return clusterNum--;//返回聚类类别数
     }
 
     private ArrayList<LocPoint> getAdjacentPoints(LocPoint centerPoint,ArrayList<LocPoint> points) {

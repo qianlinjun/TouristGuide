@@ -1,6 +1,11 @@
 package com.example.qlj.touristguide.Activity;
 
+import android.content.Intent;
 import android.graphics.drawable.Drawable;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.support.annotation.IdRes;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
@@ -8,22 +13,27 @@ import android.support.v4.view.ViewPager;
 import android.os.Bundle;
 import android.util.Log;
 
+import android.view.MenuItem;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.TextView;
+
 import com.example.qlj.touristguide.Fragment.FragAdapter;
 import com.example.qlj.touristguide.Fragment.Fragment_Map;
 import com.example.qlj.touristguide.Fragment.Fragment_Me;
 import com.example.qlj.touristguide.Fragment.Fragment_SightseeingList;
 import com.example.qlj.touristguide.Fragment.Fragment_Share;
 import com.example.qlj.touristguide.R;
-import com.getbase.floatingactionbutton.FloatingActionButton;
+import com.example.qlj.touristguide.Services.DBScanService;
 
 
 import java.util.ArrayList;
 import java.util.List;
 
 
-public class MainActivity extends FragmentActivity implements RadioGroup.OnCheckedChangeListener, ViewPager.OnPageChangeListener {
+public class MainActivity extends FragmentActivity implements RadioGroup.OnCheckedChangeListener, ViewPager.OnPageChangeListener,SensorEventListener {
 
     private RadioGroup mRadioGroup;
     //viewPage+Fragment
@@ -48,15 +58,33 @@ public class MainActivity extends FragmentActivity implements RadioGroup.OnCheck
 //    Button bt_TouristInfor;
 //    Button bt_TraceManager;
 
+    //计步功能
+    SensorManager mSensorManager;
+    Sensor mStepCount;//单次有效计步
+    Sensor  mStepDetector;//系统计步累加值
+    public static float mCount;//步行总数
+    public static float mDetector;//步行探测器
+    private static final int sensorTypeC=Sensor.TYPE_STEP_COUNTER;
+    private static final int sensorTypeD=Sensor.TYPE_STEP_DETECTOR;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         //getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);//取消状态栏
+
+        requestWindowFeature(Window.FEATURE_CUSTOM_TITLE);
         setContentView(R.layout.layout_activitymain);
+        //getWindow().setTitle("title");
+        getWindow().setFeatureInt(Window.FEATURE_CUSTOM_TITLE, R.layout.custom_title);
+        ((TextView) findViewById(R.id.title_text)).setText("旅游助手");
         initView();
-//        Log.d("currenpath",getApplicationContext().getFilesDir().getAbsolutePath());
-//        Log.d("packagepath",getApplicationContext().getPackageResourcePath());
-//        Log.d("databasepath",getApplicationContext().getDatabasePath("user").getAbsolutePath());
+        initSensor();
+        try{
+            Intent dbscanIntent=new Intent(MainActivity.this, DBScanService.class);
+            startService(dbscanIntent);
+        }catch (Exception e){
+            Log.d("MainActivity_",e.toString());
+        }
     }//onCreate
 
     /*----------实现函数------------*/
@@ -80,25 +108,36 @@ public class MainActivity extends FragmentActivity implements RadioGroup.OnCheck
         viewPager.setCurrentItem(0);
         viewPager.setOnPageChangeListener(this);
     }
+    //初始化计步Sensor
+    private void initSensor()
+    {
+        mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        mStepCount = mSensorManager.getDefaultSensor(sensorTypeC);
+        mStepDetector = mSensorManager.getDefaultSensor(sensorTypeD);
+        mSensorManager.registerListener(this, mStepCount, SensorManager.SENSOR_DELAY_FASTEST);
+        mSensorManager.registerListener(this, mStepDetector, SensorManager.SENSOR_DELAY_FASTEST);
+    }
 
-    /**
-     * 按钮的没选中显示的图标
-     */
+
+    //radiobutton点击事件
+    //按钮的没选中显示的图标
     private int[] unselectedIconIds = {
             R.drawable.icon_umap_40,
             R.drawable.icon_utourism_40,
             R.drawable.icon_ushare_40,
-            R.drawable.icon_umanager_40};
-    /**
-     * 按钮的选中显示的图标
-     */
+            R.drawable.icon_umanager_40
+    };
+
+    //按钮的选中显示的图标
     private int[] selectedIconIds = {
             R.drawable.icon_map_40,
             R.drawable.icon_tourism_40,
             R.drawable.icon_share_40,
-            R.drawable.icon_manager_40};
+            R.drawable.icon_manager_40
+    };
 
-    //radio button切换函数
+    String[] titleText={"旅游助手","发现景点","分享精彩","我"};
+    //radio button切换效果
     private void selectPage(int position) {
         // 将所有的tab的icon变成灰色的
         for (int i = 0; i < mRadioGroup.getChildCount(); i++) {
@@ -119,6 +158,8 @@ public class MainActivity extends FragmentActivity implements RadioGroup.OnCheck
         RadioButton select = (RadioButton) mRadioGroup.getChildAt(position);
         select.setCompoundDrawables(null, yellow, null, null);
         select.setTextColor(getResources().getColor(R.color.primaryDark));
+
+        ((TextView) findViewById(R.id.title_text)).setText(titleText[position]);
     }
 
 
@@ -160,6 +201,11 @@ public class MainActivity extends FragmentActivity implements RadioGroup.OnCheck
 
 
 
+    @Override
+    public boolean onMenuItemSelected(int featureId, MenuItem item) {
+        return super.onMenuItemSelected(featureId, item);
+    }
+
 
     /*------------System override------------------*/
     @Override
@@ -189,11 +235,35 @@ public class MainActivity extends FragmentActivity implements RadioGroup.OnCheck
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        mSensorManager.unregisterListener(this);
         Log.e("main","onDestroy");
     }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType() == sensorTypeC) {
+            //event.values[0]为计步历史累加值
+            mCount = event.values[0];
+
+        }
+
+        if (event.sensor.getType() == sensorTypeD) {
+
+            if (event.values[0] == 1.0) {
+                 //event.values[0]一次有效计步数据
+                mDetector++;
+            }
+
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
     }
 }

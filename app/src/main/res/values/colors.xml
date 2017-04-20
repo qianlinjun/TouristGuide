@@ -12,14 +12,20 @@
     <color name="textSecondary">#727272</color>
     <color name="divider">#B6B6B6</color>
 
-    <color name="一">#FF149300</color>
-    <color name="二">#FFA50000</color>
-    <color name="三">#FF408100</color>
-    <color name="四">#8BC34A00</color>
-    <color name="五">#689F3800</color>
-    <color name="六">#689F3800</color>
-    <color name="七">#DCEDC800</color>
-    <color name="八">#FF408100</color>
+    <color name="green_">#EE8BC34A</color>
+    <color name="khaki_">#EEF0E68C</color><!--黄褐色-->
+    <color name="lightcoral_">#EEF08080</color><!--亮珊瑚色-->
+    <color name="palegoldenrod_">#EEEEE8AA</color><!--苍麒麟色-->
+    <color name="violet_">#EEEE82EE</color><!--紫罗兰色-->
+    <color name="darksalmon_">#EEE9967A</color><!--暗肉色-->
+
+    <color name="black_semi_transparent">#B2000000</color>
+    <color name="background">#e5e5e5</color>
+    <color name="half_black">#808080</color>
+    <color name="white_pressed">#f1f1f1</color>
+    <color name="pink_pressed">#ec407a</color>
+    <color name="blue_semi_transparent">#805677fc</color>
+    <color name="blue_semi_transparent_pressed">#80738ffe</color>
 
 
     <color name="white">#FFFFFF</color><!--白色-->
@@ -159,6 +165,8 @@
     <color name="mediumspringgreen">#00FA9A</color><!--中春绿色-->
     <color name="darkturquoise">#00CED1</color><!--暗宝石绿-->
     <color name="deepskyblue">#00BFFF</color><!--深天蓝色-->
+    <color name="title_blue">#00BFFF</color><!--深天蓝色-->
+
     <color name="darkcyan">#008B8B</color><!--暗青色-->
     <color name="teal">#008080</color><!--水鸭色-->
     <color name="green">#008000</color><!--绿色-->

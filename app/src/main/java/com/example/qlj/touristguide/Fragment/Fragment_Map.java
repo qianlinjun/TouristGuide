@@ -8,6 +8,8 @@ import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.drawable.ShapeDrawable;
+import android.graphics.drawable.shapes.OvalShape;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.text.format.Time;
@@ -16,6 +18,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.Toast;
 
 import com.amap.api.location.AMapLocation;
 import com.amap.api.location.AMapLocationClient;
@@ -33,8 +36,12 @@ import com.amap.api.maps2d.model.PolylineOptions;
 import com.example.qlj.touristguide.Activity.MainActivity;
 import com.example.qlj.touristguide.Database_SQLite.MyDataBasehelp;
 import com.example.qlj.touristguide.R;
+import com.example.qlj.touristguide.Services.DBScanService;
 import com.example.qlj.touristguide.TraceAnalysis.DBScan;
 import com.example.qlj.touristguide.TraceAnalysis.LocPoint;
+import com.getbase.floatingactionbutton.AddFloatingActionButton;
+import com.getbase.floatingactionbutton.FloatingActionButton;
+import com.getbase.floatingactionbutton.FloatingActionsMenu;
 
 
 import java.util.ArrayList;
@@ -50,10 +57,6 @@ import static com.amap.api.location.CoordinateConverter.calculateLineDistance;
  */
 
 public class Fragment_Map extends Fragment implements View.OnClickListener, LocationSource, AMapLocationListener {
-
-    //UI界面
-    private Button bt_TraceLine;
-    private Button bt_pointsCluster;
 
     //高德地图
     MapView mapView;
@@ -78,11 +81,14 @@ public class Fragment_Map extends Fragment implements View.OnClickListener, Loca
     private GregorianCalendar cal;//日历
     private long startTime;//查询开始时间
     private long endTime;//查询结束时间
-    //定位点集 for dbscan analysi
-    private DBScan dbScan;//方法集
-    private int radius = 50;//聚类半径
-    private int minPts = 3;//半径内最少点数
-    private ArrayList<LatLng> points;
+//    //定位点集 for dbscan analysi
+//    private DBScan dbScan;//方法集
+//    private int radius = 50;//聚类半径
+//    private int minPts = 3;//半径内最少点数
+
+
+    private ArrayList<LocPoint> dbPoints;//用于聚类
+    private ArrayList<LatLng> locPoints=new ArrayList<LatLng>();//用于显示轨迹
 
 
     @Override
@@ -112,26 +118,26 @@ public class Fragment_Map extends Fragment implements View.OnClickListener, Loca
     public void onPause() {
         super.onPause();
         mapView.onPause();
-        Log.e("map","onPause");
+        Log.d("map","onPause");
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        Log.e("map","onStop");
+        Log.d("map","onStop");
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         mapView.onDestroy();
-        Log.e("map","onDestroy");
+        Log.d("map","onDestroy");
     }
     @Override
     public void onResume() {
         super.onResume();
-        mapView.onResume();
-        Log.e("map","onResume");
+        //mapView.onResume();
+        Log.d("map","onResume");
     }
 
     @Override
@@ -142,19 +148,27 @@ public class Fragment_Map extends Fragment implements View.OnClickListener, Loca
 
     /*----------实现函数------------*/
     //初始化控件
-    private void initView(View view)
+    private void initView(final View view)
     {
-        bt_TraceLine=(Button)view.findViewById(R.id.bt_traceLine);
-        bt_TraceLine.setOnClickListener(this);
-        bt_pointsCluster=(Button)view.findViewById(R.id.bt_pointsCluster);
-        bt_pointsCluster.setOnClickListener(this);
+        //景点、轨迹点、轨迹
+        FloatingActionButton fabbt_tourismPoint = (FloatingActionButton) view.findViewById(R.id.fabbutton_1);
+        FloatingActionButton fabbt_TraceLine = (FloatingActionButton) view.findViewById(R.id.fabbutton_2);
+        FloatingActionButton fabbt_ptsCluster = (FloatingActionButton) view.findViewById(R.id.fabbutton_3);
+        fabbt_tourismPoint.setOnClickListener(this);//景点
+        fabbt_TraceLine.setOnClickListener(this);//轨迹
+        fabbt_ptsCluster.setOnClickListener(this);//轨迹点
     }
+
+
+
     //初始化地图
     private void initMap()
     {
         aMap = mapView.getMap();
         MyLocationStyle myLocationStyle = new MyLocationStyle();
         myLocationStyle.myLocationIcon(BitmapDescriptorFactory.fromResource(R.drawable.icon_loc1_128));// 设置小蓝点的图标
+        myLocationStyle.strokeColor(Color.argb(0, 0, 0, 0));// 设置圆形的边框颜色
+        myLocationStyle.radiusFillColor(Color.argb(0, 0, 0, 0));// 设置圆形的填充颜色
         //myLocationStyle.strokeColor(Color.BLACK);// 设置圆形的边框颜色
         //myLocationStyle.radiusFillColor(Color.argb(100, 0, 0, 180));// 设置圆形的填充颜色
         // myLocationStyle.anchor(int,int)//设置小蓝点的锚点
@@ -170,8 +184,6 @@ public class Fragment_Map extends Fragment implements View.OnClickListener, Loca
         dbHelper = new MyDataBasehelp(getActivity(), "user.db", null, 1);//构造dbHelper对象
         db = dbHelper.getWritableDatabase();
         value=new ContentValues();
-        points = new ArrayList<LatLng>();//储存自己定位点
-        dbScan = new DBScan(radius,minPts);//参数为半径和半径范围内最少点数量
     }
     //初始化SharedPreferences
     private void initSharedPreferences()
@@ -187,91 +199,42 @@ public class Fragment_Map extends Fragment implements View.OnClickListener, Loca
     }
     //显示历史轨迹
     public void showLocation(){
-        now = new Date();//Data 封装当前时间
-        cal = new GregorianCalendar();//标准日历
-        cal.setTime(now);
-        //可以根据需要设置时区
-        // cal.setTimeZone(TimeZone.getDefault());
-        cal.set(Calendar.HOUR_OF_DAY, 0);
-        cal.set(Calendar.MINUTE, 0);
-        cal.set(Calendar.SECOND, 0);
-        //毫秒可根据系统需要清除或不清除
-        cal.set(Calendar.MILLISECOND, 0);
-        startTime = cal.getTimeInMillis();
-        endTime = startTime + 24 * 3600 * 1000;
-
-        //取出当天的定位数据
-        Cursor cursor = db.rawQuery("SELECT * FROM location WHERE " +
-                        "Time >= ? and Time < ?",
-                new String[] { String.valueOf(startTime), String.valueOf(endTime) });
-
-        if (cursor.moveToFirst())
-        {
-            do {
-                int ID=cursor.getInt(cursor.getColumnIndex("ID"));
-                Double lat=cursor.getDouble(cursor.getColumnIndex("Lat"));
-                Double lon = cursor.getDouble(cursor.getColumnIndex("Lon"));
-                //绘制marker
-                aMap.addCircle(new CircleOptions()
-                        .center(new LatLng(lat,lon))
-                        .radius(drawRadius) //半径
-                        .fillColor(Color.RED) //里面的颜色
-                        .strokeColor(Color.RED)); //边框的颜色
-                points.add(new LatLng(lat,lon));
-            } while (cursor.moveToNext());
-            cursor.close();
+        dbPoints = DBScanService.points;//储存自己定位点
+        try {
+            for (LocPoint p : dbPoints)
+                locPoints.add(new LatLng(p.getX(), p.getY()));
+        }catch (Exception e){
+            Log.d("Fragment_Map",e.toString());
         }
+
         aMap.addPolyline((new PolylineOptions())
-                .addAll(points)
-                .geodesic(true).color(Color.BLUE));
+                .addAll(locPoints)
+                .geodesic(true)
+                .color(Color.BLUE));
     }
 
+//    int[] color={R.color.一,R.color.二,R.color.三,R.color.四,R.color.五,R.color.六};
     //dbscan聚类
     public void dbscan()
     {
-        //多线程
-        Date now = new Date();//Data 封装当前时间
-        GregorianCalendar cal = new GregorianCalendar();//标准日历
-        cal.setTime(now);
-        //可以根据需要设置时区
-        // cal.setTimeZone(TimeZone.getDefault());
-        cal.set(Calendar.HOUR_OF_DAY, 0);
-        cal.set(Calendar.MINUTE, 0);
-        cal.set(Calendar.SECOND, 0);
-        //毫秒可根据系统需要清除或不清除
-        cal.set(Calendar.MILLISECOND, 0);
-        long startTime = cal.getTimeInMillis();
-        long endTime = startTime + 24 * 3600 * 1000;
-
-        Cursor cursor = db.rawQuery("SELECT * FROM location WHERE " +
-                        "Time >= ? and Time < ?",
-                new String[] { String.valueOf(startTime), String.valueOf(endTime) });
-        if (cursor.moveToFirst())
+        dbPoints = DBScanService.points;//储存自己定位点
+        for(LocPoint p : dbPoints)
         {
-            do {
-                int ID=cursor.getInt(cursor.getColumnIndex("ID"));
-                Long TimeStamp = cursor.getLong(cursor.getColumnIndex("Time"));
-                Double Lat=cursor.getDouble(cursor.getColumnIndex("Lat"));
-                Double Lon = cursor.getDouble(cursor.getColumnIndex("Lon"));
-                //points.add(new LocPoint(Lat,Lon,TimeStamp));
-            } while (cursor.moveToNext());
-            cursor.close();
-        }
+            int i=p.getCluster();
+            if(i != 0)
+            {
+                aMap.addCircle(new CircleOptions()
+                        .center(new LatLng(p.getX(),p.getY()))
+                        .radius(5)
+                        .strokeColor(R.color.lightcoral_)
+                        .fillColor(R.color.lightcoral_));
+//.strokeColor(color[p.getCluster()])
+//                .fillColor(color[p.getCluster()]))
+            }
 
-//        for(LocPoint p : points)
-//        {
-//            if (p.getCluster()==1)
-//                aMap.addCircle(new CircleOptions()
-//                        .center(new LatLng(p.getX(),p.getY()))
-//                        .radius(10)
-//                        .fillColor(R.color.二));
-//            if (p.getCluster()==2)
-//                aMap.addCircle(new CircleOptions()
-//                        .center(new LatLng(p.getX(),p.getY()))
-//                        .radius(10)
-//                        .fillColor(R.color.三));
-//        }
-    }
+        }
+    }//dbscan
+
 
 
     /*-------监听点击-------*/
@@ -280,10 +243,10 @@ public class Fragment_Map extends Fragment implements View.OnClickListener, Loca
         int id = v.getId();
         switch(id)
         {
-            case R.id.bt_traceLine:
+            case R.id.fabbutton_2:
                 showLocation();//展示轨迹
                 break;
-            case R.id.bt_pointsCluster:
+            case R.id.fabbutton_3:
                 dbscan();
                 break;
         }
@@ -339,8 +302,8 @@ public class Fragment_Map extends Fragment implements View.OnClickListener, Loca
                 int minute = t.minute;
                 int second = t.second;
 
-                //考虑高德和手机设备存在的定位精度误差，如果先后两次定位距离超过25米或者每隔10min强制记录数据
-                if(distance_precur > 20 || ((minute%10 == 0) && (second>0 && second<10)))
+                //考虑高德和手机设备存在的定位精度误差，如果先后两次定位距离超过25米记录一条数据，另外系统每隔20min强制记录一条数据
+                if(distance_precur > 40 || ((minute%20 == 0) && (second>0 && second<10)))
                 {
                     value.put("Time", getTime());
                     value.put("Lat",lat_cur);
@@ -354,7 +317,13 @@ public class Fragment_Map extends Fragment implements View.OnClickListener, Loca
                     editor.putString("Lat", String.valueOf(lat_cur));
                     editor.putString("Lon", String.valueOf(lon_cur));
                     editor.commit();
-                }
+
+
+                    aMap.addCircle(new CircleOptions()
+                            .center(new LatLng(lat_cur,lon_cur))
+                            .radius(5)
+                            .strokeColor(R.color.lightcoral_));
+               }
             } else {
                 Log.e("AmapErr","定位失败," + aMapLocation.getErrorCode()+ ": " + aMapLocation.getErrorInfo());
             }
@@ -372,6 +341,5 @@ public class Fragment_Map extends Fragment implements View.OnClickListener, Loca
         }
         mlocationClient = null;
     }//deactivate
-
 
 }

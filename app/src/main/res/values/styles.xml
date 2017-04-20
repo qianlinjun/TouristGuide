@@ -8,7 +8,25 @@
         <item name="colorAccent">@color/colorAccent</item>
         <!--<item name="android:windowIsTranslucent">true</item>-->
         <!--<item name="android:windowBackground">@android:color/transparent</item>-->
-        <!--<item name="android:windowTitleSize">100dip</item>-->
+        <item name="android:windowTitleSize">200dp</item>
+    </style>
+
+
+    <style name="WindowTitleBackground" >
+        <item name="android:background">@color/colorPrimary</item>
+    </style>
+    <style name="MyTheme" parent="android:Theme">
+        <item name="android:windowTitleSize">50dp</item>
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="android:windowBackground">@color/white</item>
+        <item name="android:windowTitleBackgroundStyle">@style/WindowTitleBackground</item>
+    </style>
+
+
+    <style name="menu_labels_style">
+        <item name="android:background">@drawable/fab_label_background</item>
+        <item name="android:textColor">@color/white</item>
     </style>
 
 </resources>
