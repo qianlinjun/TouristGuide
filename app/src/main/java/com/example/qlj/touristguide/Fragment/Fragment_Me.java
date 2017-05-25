@@ -1,27 +1,39 @@
 package com.example.qlj.touristguide.Fragment;
 
-import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.Switch;
 import android.widget.TextView;
 
 import com.example.qlj.touristguide.Activity.MainActivity;
-import com.example.qlj.touristguide.Database_SQLite.MyDataBasehelp;
+import com.example.qlj.touristguide.TraceManager.StepDetector.StepDetector;
+import com.example.qlj.touristguide.databaseSQLite.MyDataBasehelp;
 import com.example.qlj.touristguide.R;
-import com.example.qlj.touristguide.Services.DBScanService;
-import com.example.qlj.touristguide.TraceAnalysis.BarChartManager;
-import com.example.qlj.touristguide.TraceAnalysis.DBScan;
-import com.example.qlj.touristguide.TraceAnalysis.LocPoint;
+import com.example.qlj.touristguide.TraceManager.DBScan.DBScanService;
+import com.example.qlj.touristguide.TraceManager.Chart.BarChartManager;
+import com.example.qlj.touristguide.TraceManager.DBScan.DBScan;
+import com.example.qlj.touristguide.TraceManager.DBScan.LocPoint;
 import com.github.mikephil.charting.charts.BarChart;
+import com.github.mikephil.charting.charts.PieChart;
+import com.github.mikephil.charting.components.Legend;
 import com.github.mikephil.charting.data.BarEntry;
+import com.github.mikephil.charting.data.PieEntry;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.PieData;
+import com.github.mikephil.charting.data.PieDataSet;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -38,6 +50,25 @@ import static android.content.Context.MODE_PRIVATE;
 
 public class Fragment_Me extends Fragment implements View.OnClickListener {
 
+    //UI界面
+    private TextView tv_weather;//天气
+    private TextView tv_attract;//兴趣设置
+    private boolean isTvAttractPressed;
+    private LinearLayout layout_attract;//显示个人兴趣按钮
+    private TextView hide_1;private boolean isChoosed1;//历史文化
+    private TextView hide_2;private boolean isChoosed2;//博物展览
+    private TextView hide_3;private boolean isChoosed3;//大学校园
+    private TextView hide_4;private boolean isChoosed4;//户外自然
+    private TextView hide_5;private boolean isChoosed5;//娱乐饮食
+
+    private TextView bt_mytrace;//轨迹管理
+    private TextView tv_stepAccount;//显示步数
+    //BarChart
+    private BarChart mBarChart;
+    private ArrayList<String> xValues;
+    private ArrayList<BarEntry> yValues;
+
+
     //数据库读取定位数据
     private MyDataBasehelp dbHelper;
     private SQLiteDatabase db;
@@ -50,48 +81,21 @@ public class Fragment_Me extends Fragment implements View.OnClickListener {
     private SharedPreferences pref;
     private SharedPreferences.Editor editor;
 
-    //定位点数据读取和聚类分析
-    private ArrayList<LocPoint> points;
-    private int[] eachTypeTotalPts;//..Pts[i]表示类别为i的点数量
-    private long[] lastTimeStamp;//每一个类别都有开始结束时间戳
-    private int[] eachTypeDuraTime;//..Time[i]表示类别i的轨迹总时间
-    //private long[] newtimeStamp;
-    private long interval = 660000;//系统设定中有每隔10分钟强制记录一条定位数据，
-                                   // 如果同类别相邻点时间间隔大于11(min) x 60（sec） x 1000（mil）,
-                                   //说明不是连续定位
+    //饼图显示轨迹统计信息
+    private PieChart mChart;
 
-    private DBScan dbScan;//DBScan方法实例
-    private int radius = 50;//聚类半径
-    private int minPts = 3;//半径内最少点数
-
-
-    //UI界面
-    Button bt_mytrace;
-    protected BarChart mBarChart;
-    ArrayList<String> xValues;
-    ArrayList<BarEntry> yValues;
-    TextView tv_result;
-
-    TextView tv_attract;
-    LinearLayout layout_attract;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-//        initDatabase();
-//        initSharedPreferences();
-//        initDBScan();
+        initSharedPreferences();
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.layout_me, container, false);
-        tv_attract=(TextView)view.findViewById(R.id.tv_attract);
-        tv_attract.setOnClickListener(this);
-        layout_attract = (LinearLayout) view.findViewById(R.id.ll_hide);
-        layout_attract.setVisibility(View.GONE);//这一句即隐藏布局LinearLayout区域
-//        initView(view);
-//        initChart();
+        initView(view);
+        initChart(view);
         return view;
     }
 
@@ -103,27 +107,176 @@ public class Fragment_Me extends Fragment implements View.OnClickListener {
     @Override
     public void onPause() {
         super.onPause();
+        editor.putBoolean("history", isChoosed1);
+        editor.putBoolean("museum", isChoosed2);
+        editor.putBoolean("campus", isChoosed3);
+        editor.putBoolean("nature", isChoosed4);
+        editor.putBoolean("recreation", isChoosed5);
+        editor.commit();
     }
 
     //初始化界面
     private void initView(View view)
     {
-        bt_mytrace=(Button)view.findViewById(R.id.bt_mytrace);
+        //天气
+        tv_weather=(TextView)view.findViewById(R.id.tv_weather);
+        tv_weather.setOnClickListener(this);
+        //兴趣设置
+        tv_attract=(TextView)view.findViewById(R.id.tv_attract);
+        tv_attract.setOnClickListener(this);
+
+        //兴趣设置布局
+        layout_attract = (LinearLayout) view.findViewById(R.id.ll_hide);
+        layout_attract.setVisibility(View.GONE);//这一句即隐藏布局LinearLayout区域
+        hide_1=(TextView)view.findViewById(R.id.hide_1);//历史文化
+        hide_2=(TextView)view.findViewById(R.id.hide_2);//博物展览
+        hide_3=(TextView)view.findViewById(R.id.hide_3);//大学校园
+        hide_4=(TextView)view.findViewById(R.id.hide_4);//户外自然
+        hide_5=(TextView)view.findViewById(R.id.hide_5);//娱乐饮食
+        hide_1.setOnClickListener(this);isChoosed1 = pref.getBoolean("history", false);
+        hide_2.setOnClickListener(this);isChoosed2 = pref.getBoolean("museum", false);
+        hide_3.setOnClickListener(this);isChoosed3 = pref.getBoolean("campus", false);
+        hide_4.setOnClickListener(this);isChoosed4 = pref.getBoolean("nature", false);
+        hide_5.setOnClickListener(this);isChoosed5 = pref.getBoolean("recreation", false);
+        if(isChoosed1)
+            hide_1.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
+        if(isChoosed2)
+            hide_2.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
+        if(isChoosed3)
+            hide_3.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
+        if(isChoosed4)
+            hide_4.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
+        if(isChoosed5)
+            hide_5.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
+
+        //轨迹管理
+        bt_mytrace=(TextView)view.findViewById(R.id.tv_traceManager);
         bt_mytrace.setOnClickListener(this);
-        tv_result=(TextView)view.findViewById(R.id.edit_queryResult);
-        tv_result.setText(String.valueOf(MainActivity.mDetector));
-        mBarChart = (BarChart) view.findViewById(R.id.chart_bar);
+        //显示计步
+        tv_stepAccount=(TextView)view.findViewById(R.id.tv_stepaccount2);
+        tv_stepAccount.setText(String.valueOf(StepDetector.CURRENT_SETP)+"步");
+        tv_stepAccount.setOnClickListener(this);
+        isTvAttractPressed = false;
     }
 
     //初始化barchart
-    public void initChart()
+    public void initChart(View view)
     {
         //mBarChart.setDescription("专业情况(不含ICT)");
-        xValues = new ArrayList<String>();
-        yValues = new ArrayList<BarEntry>();
+        //xValues = new ArrayList<String>();
+        //yValues = new ArrayList<BarEntry>();
         //BarChartManager.setUnit("单位：万户");
-        BarChartManager.initBarChart(getActivity(),mBarChart,xValues,yValues);
+        //BarChartManager.initBarChart(getActivity(),mBarChart,xValues,yValues);
+        mChart = (PieChart) view.findViewById(R.id.spread_pie_chart);
+        PieData mPieData = getPieData(4, 100);
+        showChart(mChart, mPieData);
     }
+
+    private void showChart(PieChart pieChart, PieData pieData) {
+        //pieChart.setHoleColorTransparent(true);
+
+        pieChart.setHoleRadius(60f);  //半径
+        pieChart.setTransparentCircleRadius(64f); // 半透明圈
+        //pieChart.setHoleRadius(0)  //实心圆
+
+        //pieChart.setDescription("测试饼状图");
+
+        // mChart.setDrawYValues(true);
+        pieChart.setDrawCenterText(true);  //饼状图中间可以添加文字
+
+        pieChart.setDrawHoleEnabled(true);
+
+        pieChart.setRotationAngle(90); // 初始旋转角度
+
+        // draws the corresponding description value into the slice
+        // mChart.setDrawXValues(true);
+
+        // enable rotation of the chart by touch
+        pieChart.setRotationEnabled(true); // 可以手动旋转
+
+        // display percentage values
+        pieChart.setUsePercentValues(true);  //显示成百分比
+        // mChart.setUnit(" €");
+        // mChart.setDrawUnitsInChart(true);
+
+        // add a selection listener
+//      mChart.setOnChartValueSelectedListener(this);
+        // mChart.setTouchEnabled(false);
+
+//      mChart.setOnAnimationListener(this);
+
+        pieChart.setCenterText("轨迹统计");  //饼状图中间的文字
+
+        //设置数据
+        pieChart.setData(pieData);
+
+        // undo all highlights
+//      pieChart.highlightValues(null);
+//      pieChart.invalidate();
+
+        Legend mLegend = pieChart.getLegend();  //设置比例图
+        mLegend.setPosition(Legend.LegendPosition.RIGHT_OF_CHART);  //最右边显示
+//      mLegend.setForm(LegendForm.LINE);  //设置比例图的形状，默认是方形
+        mLegend.setXEntrySpace(7f);
+        mLegend.setYEntrySpace(5f);
+
+        pieChart.animateXY(1000, 1000);  //设置动画
+        // mChart.spin(2000, 0, 360);
+    }
+
+    /**
+     *
+     * @param count 分成几部分
+     * @param range
+     */
+    private PieData getPieData(int count, float range) {
+
+        ArrayList<String> xValues = new ArrayList<String>();  //xVals用来表示每个饼块上的内容
+
+        for (int i = 0; i < count; i++) {
+            xValues.add("Quarterly" + (i + 1));  //饼块上显示成Quarterly1, Quarterly2, Quarterly3, Quarterly4
+        }
+
+        ArrayList<PieEntry> yValues = new ArrayList<PieEntry>();  //yVals用来表示封装每个饼块的实际数据
+
+        // 饼图数据
+        /**
+         * 将一个饼形图分成四部分， 四部分的数值比例为14:14:34:38
+         * 所以 14代表的百分比就是14%
+         */
+        float quarterly1 = 14;
+        float quarterly2 = 14;
+        float quarterly3 = 34;
+        float quarterly4 = 38;
+
+        yValues.add(new PieEntry(quarterly1, 0));
+        yValues.add(new PieEntry(quarterly2, 1));
+        yValues.add(new PieEntry(quarterly3, 2));
+        yValues.add(new PieEntry(quarterly4, 3));
+
+        //y轴的集合
+        PieDataSet pieDataSet = new PieDataSet(yValues, "Quarterly Revenue 2014");/*显示在比例图上*/
+        pieDataSet.setSliceSpace(0f); //设置个饼状图之间的距离
+
+        ArrayList<Integer> colors = new ArrayList<Integer>();
+
+        // 饼图颜色
+        colors.add(Color.rgb(205, 205, 205));
+        colors.add(Color.rgb(114, 188, 223));
+        colors.add(Color.rgb(255, 123, 124));
+        colors.add(Color.rgb(57, 135, 200));
+
+        pieDataSet.setColors(colors);
+
+        DisplayMetrics metrics = getResources().getDisplayMetrics();
+        float px = 5 * (metrics.densityDpi / 160f);
+        pieDataSet.setSelectionShift(px); // 选中态多出的长度
+
+        PieData pieData = new PieData(pieDataSet);
+
+        return pieData;
+    }
+
 
 
     //初始化数据库
@@ -139,95 +292,6 @@ public class Fragment_Me extends Fragment implements View.OnClickListener {
     {
         pref= getActivity().getSharedPreferences("data",MODE_PRIVATE);
         editor = pref.edit();
-    }
-
-    //初始化DBScan
-    private void initDBScan()
-    {
-        points = new ArrayList<LocPoint>();//储存自己定位点
-        dbScan = new DBScan(radius,minPts);//参数为半径和半径范围内最少点数量
-    }
-
-    //DBScan分析
-    private void DBScanAnalysis()
-    {
-//        now = new Date();//Data 封装当前时间
-//        cal = new GregorianCalendar();//标准日历
-//        cal.setTime(now);
-//        //可以根据需要设置时区
-//        // cal.setTimeZone(TimeZone.getDefault());
-//        cal.set(Calendar.HOUR_OF_DAY, 0);
-//        cal.set(Calendar.MINUTE, 0);
-//        cal.set(Calendar.SECOND, 0);
-//        //毫秒可根据系统需要清除或不清除
-//        cal.set(Calendar.MILLISECOND, 0);
-//        startTime = cal.getTimeInMillis();
-//        endTime = startTime + 24 * 3600 * 1000;
-//
-//        //取出当天的定位数据
-//        Cursor cursor = db.rawQuery("SELECT * FROM location WHERE " +
-//                "Time >= ? and Time < ?",
-//                 new String[] { String.valueOf(startTime), String.valueOf(endTime) });
-//        if (cursor.moveToFirst())
-//        {
-//            do {
-//                int ID=cursor.getInt(cursor.getColumnIndex("ID"));
-//                Long timeStamp = cursor.getLong(cursor.getColumnIndex("Time"));
-//                Double lat=cursor.getDouble(cursor.getColumnIndex("Lat"));
-//                Double lon = cursor.getDouble(cursor.getColumnIndex("Lon"));
-//                points.add(new LocPoint(lat,lon,timeStamp));
-//            } while (cursor.moveToNext());
-//            cursor.close();
-//        }
-//        int typeNum = dbScan.process(points);//聚类，给每一个点都赋值类别，同时返回类别数
-//        eachTypeTotalPts = new int[typeNum];//..Pts[i]表示类别为i的点数量
-//        eachTypeDuraTime = new int[typeNum];//..Time[i]表示类别i的轨迹时间
-//        lastTimeStamp=new long[typeNum];//..TimeStamp[i]表示每个类别结束的时间戳
-//        for(int i=0;i<typeNum;i++)
-//            lastTimeStamp[i]=0;//时间戳初始化为0
-
-        //遍历处理完成的点集
-//        for(LocPoint point : points)
-//        {
-//            eachTypeTotalPts[point.getCluster()-1]++;//统计每个类别的点数量
-//            eachTypeDuraTime[point.getCluster()-1]+=getDurationTime(point);//统计每个类别的总时间
-//            tv_result.append("纬度："+String.valueOf(point.getX())+"类别："+String.valueOf(point.getCluster())+"\n");
-//        }
-
-        eachTypeTotalPts= DBScanService.eachTypeTotalPts;//统计每个类别的点数量
-        eachTypeDuraTime=DBScanService.eachTypeDuraTime;//统计每个类别的总时间
-
-
-        //准备barChart
-        for(int size=0;size<eachTypeTotalPts.length;size++)
-        {
-            if(eachTypeTotalPts[size] != 0)
-            {
-                xValues.add("地点"+String.valueOf(size+1));
-                yValues.add(new BarEntry(eachTypeTotalPts[size],size));
-            }
-
-        }//
-        BarChartManager.initBarChart(getActivity(),mBarChart,xValues,yValues);
-    }
-
-    //获得同类别相邻记录点时间间隔
-    public long getDurationTime(LocPoint point)
-    {
-        if(lastTimeStamp[point.getCluster()-1] == 0)
-        {
-            //如果是类别i第一个点则初始化时间戳i，返回0
-            lastTimeStamp[point.getCluster()-1] = point.getTimestamp();
-        }else if(point.getTimestamp()- lastTimeStamp[point.getCluster()-1] -interval < 0){
-            //同类别相邻点时间间隔正常，返回时间间隔
-            lastTimeStamp[point.getCluster()-1] = point.getTimestamp();
-            long duraTime=point.getTimestamp()- lastTimeStamp[point.getCluster()-1];
-            return duraTime;
-        }else {
-            //如果相邻点时间间隔大于定位间隔值，说明是两段不同定位,返回0
-            lastTimeStamp[point.getCluster()-1] = point.getTimestamp();
-        }
-        return 0;
     }
 
 
@@ -249,30 +313,80 @@ public class Fragment_Me extends Fragment implements View.OnClickListener {
     @Override
     public void onClick(View v) {
         int id = v.getId();
-        switch(id)
-        {
-            case R.id.tv_attract:
-                layout_attract.setVisibility(View.VISIBLE);//这一句显示布局LinearLayout区域
+        switch(id) {
+            case R.id.tv_weather:
+                PackageManager packageManager = getContext().getPackageManager();
+                Intent intent1 = new Intent();
+                intent1 = packageManager.getLaunchIntentForPackage("com.oppo.weather");
+                startActivity(intent1);
                 break;
-            case R.id.bt_mytrace:
-                DBScanAnalysis();
 
+            /*------------兴趣设置-------------*/
+            case R.id.tv_attract://显示布局LinearLayout区域
+                if (!isTvAttractPressed) {
+                    layout_attract.setVisibility(View.VISIBLE);
+                    isTvAttractPressed = true;
+                } else {
+                    layout_attract.setVisibility(View.GONE);
+                    isTvAttractPressed = false;
+                }
+                break;
+
+            case R.id.hide_1://历史文化
+                if (isChoosed1) {
+                    isChoosed1 = false;
+                    hide_1.setBackgroundColor(getResources().getColor(R.color.white));
+                } else {
+                    isChoosed1 = true;
+                    hide_1.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
+                }
+
+                break;
+            case R.id.hide_2://博物展览
+                if (isChoosed2) {
+                    isChoosed2 = false;
+                    hide_2.setBackgroundColor(getResources().getColor(R.color.white));
+                } else {
+                    isChoosed2 = true;
+                    hide_2.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
+                }
+                break;
+            case R.id.hide_3://大学校园
+                if (isChoosed3) {
+                    isChoosed3 = false;
+                    hide_3.setBackgroundColor(getResources().getColor(R.color.white));
+                } else {
+                    isChoosed3 = true;
+                    hide_3.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
+                }
+                break;
+            case R.id.hide_4://户外自然
+                if (isChoosed4) {
+                    isChoosed4 = false;
+                    hide_4.setBackgroundColor(getResources().getColor(R.color.white));
+                } else {
+                    isChoosed4 = true;
+                    hide_4.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
+                }
+                break;
+            case R.id.hide_5://娱乐饮食
+                if (isChoosed5) {
+                    isChoosed5 = false;
+                    hide_5.setBackgroundColor(getResources().getColor(R.color.white));
+                } else {
+                    isChoosed5 = true;
+                    hide_5.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
+                }
+                break;
+
+            case R.id.bt_mytrace:
                 // tv_result.setText((int) MainActivity.mCount);
+                break;
+            case R.id.tv_stepaccount2:
+                tv_stepAccount.setText(String.valueOf(StepDetector.CURRENT_SETP)+"步");
                 break;
         }
     }//onClick
 
 }
-
-
-//int hour=loc2/60;
-//int minute=loc2%60;
-
-//绘制marker
-//                        Marker marker = aMap.addMarker(new MarkerOptions()
-//                                .position(new LatLng(Lat,Long))
-//                                .icon(BitmapDescriptorFactory.fromBitmap(BitmapFactory
-//                                        .decodeResource(getResources(),R.drawable.location)))
-//                                .draggable(true));
-
 
