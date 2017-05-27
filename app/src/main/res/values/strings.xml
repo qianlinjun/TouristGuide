@@ -39,24 +39,6 @@
         <item>"30.594372"</item>
     </string-array>
 
-    <string-array name="array_label">
-        <item>"30.536047"</item>
-        <item>"30.544522"</item>
-        <item>"30.554200"</item>
-        <item>"30.546781"</item>
-        <item>"30.549583"</item>
-        <item>"30.561394"</item>
-        <item>"30.579914"</item>
-        <item>"30.542064"</item>
-        <item>"30.619836"</item>
-        <item>"30.545706"</item>
-        <item>"30.551128"</item>
-        <item>"30.559856"</item>
-        <item>"31.178239"</item>
-        <item>"30.551686"</item>
-        <item>"30.594372"</item>
-    </string-array>
-
     <string-array name="array_longitude">
         <item>"114.364322"</item>
         <item>"114.302350"</item>
@@ -75,6 +57,28 @@
         <item>"114.396000"</item>
     </string-array>
 
+
+
+    <string-array name="array_label">
+        <item>"30.536047"</item>
+        <item>"30.544522"</item>
+        <item>"30.554200"</item>
+        <item>"30.546781"</item>
+        <item>"30.549583"</item>
+        <item>"30.561394"</item>
+        <item>"30.579914"</item>
+        <item>"30.542064"</item>
+        <item>"30.619836"</item>
+        <item>"30.545706"</item>
+        <item>"30.551128"</item>
+        <item>"30.559856"</item>
+        <item>"31.178239"</item>
+        <item>"30.551686"</item>
+        <item>"30.594372"</item>
+    </string-array>
+
+
+
     <string-array name="array_hot">
         <item>1635</item>
         <item>12670</item>
@@ -87,6 +91,11 @@
         <item>393</item>
         <item>453</item>
         <item>1207</item>
+
+        <item>279</item>
+        <item>1767</item>
+        <item>465</item>
+        <item>3293</item>
     </string-array>
 
     <string-array name="array_ticket">
@@ -100,7 +109,31 @@
         <item>"免费"</item>
         <item>"免费"</item>
         <item>"10"</item>
-        <item>"60"</item>
+        <item>"免费"</item>
+
+        <item>"免费"</item>
+        <item>"80"</item>
+        <item>"免费"</item>
+        <item>"79"</item>
+    </string-array>
+
+    <string-array name="short_info">
+        <item>"热度：1635\t\t\t\t\t\t\t\t门票：免费"</item>
+        <item>"热度：12670\t\t\t\t\t\t\t\t门票：80"</item>
+        <item>"热度：2282\t\t\t\t\t\t\t\t门票：免费"</item>
+        <item>"热度：5110\t\t\t\t\t\t\t\t门票：免费"</item>
+        <item>"热度：2137\t\t\t\t\t\t\t\t门票：免费"</item>
+        <item>"热度：740\t\t\t\t\t\t\t\t门票：免费"</item>
+        <item>"热度：533\t\t\t\t\t\t\t\t门票：免费"</item>
+        <item>"热度：299\t\t\t\t\t\t\t\t门票：免费"</item>
+        <item>"热度：393\t\t\t\t\t\t\t\t门票：免费"</item>
+        <item>"热度：453\t\t\t\t\t\t\t\t门票：10"</item>
+        <item>"热度：1207\t\t\t\t\t\t\t\t门票：60"</item>
+
+        <item>"热度：740\t\t\t\t\t\t\t\t门票：免费"</item>
+        <item>"热度：533\t\t\t\t\t\t\t\t门票：免费"</item>
+        <item>"热度：299\t\t\t\t\t\t\t\t门票：免费"</item>
+        <item>"热度：393\t\t\t\t\t\t\t\t门票：免费"</item>
     </string-array>
 
     <string-array name="array_specificInfo">

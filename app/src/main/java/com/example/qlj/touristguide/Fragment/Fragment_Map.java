@@ -23,6 +23,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.text.format.Time;
@@ -34,12 +36,14 @@ import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 
+import com.example.qlj.touristguide.Euclid.InfoWinAdapter;
 import com.example.qlj.touristguide.TraceManager.DBScan.DBScanService;
-import com.example.qlj.touristguide.touristInfor.InfoWinAdapter;
 import com.getbase.floatingactionbutton.FloatingActionButton;
 
 
@@ -49,6 +53,7 @@ import com.example.qlj.touristguide.TraceManager.DBScan.LocPoint;
 import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.annotations.Icon;
 import com.mapbox.mapboxsdk.annotations.IconFactory;
+import com.mapbox.mapboxsdk.annotations.Marker;
 import com.mapbox.mapboxsdk.annotations.MarkerOptions;
 import com.mapbox.mapboxsdk.annotations.PolylineOptions;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
@@ -120,8 +125,6 @@ public class Fragment_Map extends Fragment implements View.OnClickListener, OnMa
     public static String[] array_Hot;//储存景点热度
     public static String[] array_Ticket;//储存景点票价
 
-    public static double target_lat,target_lng;//目标经纬度
-
     private String[] array_Lat;//储存景点纬度
     private String[] array_Lng;//储存景点经度
     public static HashMap<String, String> hashMap = new HashMap<String, String>();//储存景点/ID hashmap
@@ -134,7 +137,7 @@ public class Fragment_Map extends Fragment implements View.OnClickListener, OnMa
     //定位
     private LocationManager locationManager;
     private IconFactory iconFactory;
-    private double lat_pre,lon_pre,lat_cur,lon_cur;
+    public static double lat_pre,lon_pre,lat_cur,lon_cur;
     private Icon locIcon;//定位
     private Icon traceIcon;//足迹
     private Icon pictureIcon;//地图上显示图片
@@ -207,9 +210,8 @@ public class Fragment_Map extends Fragment implements View.OnClickListener, OnMa
             hashMap.put(array_Name[i],String.valueOf(i));
         }
 
-        //marker适配器
-        InfoWinAdapter adapter =new InfoWinAdapter(getContext());
-        map.setInfoWindowAdapter(adapter);
+        InfoWinAdapter adapter = new InfoWinAdapter(getContext(),map);
+        map.setInfoWindowAdapter(adapter);//自定义adapter
 
         //通过android自带GPS获得位置，并实现储存
         initLocation();
@@ -684,12 +686,6 @@ public class Fragment_Map extends Fragment implements View.OnClickListener, OnMa
                 break;
             case R.id.fabbutton_3://照片
                 showPicture();
-                break;
-
-            case R.id.navigation_LL:
-                origin = Position.fromCoordinates(lon_cur, lat_cur);//当前位置
-                destination = Position.fromCoordinates(target_lng,target_lat);//景点位置
-                getRoute(origin,destination);
                 break;
         }
     }//onClick
